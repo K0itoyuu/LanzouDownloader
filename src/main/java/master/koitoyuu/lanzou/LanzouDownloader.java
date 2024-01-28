@@ -6,11 +6,15 @@ import master.koitoyuu.lanzou.utils.HTTPUtils;
 import master.koitoyuu.lanzou.utils.LanzouException;
 import master.koitoyuu.lanzou.utils.StringUtils;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author Koitoyuu
  */
 public class LanzouDownloader {
     /**
+     * 获取蓝奏云文件直链
      *
      * @param url 蓝奏云文件链接
      * @param password 蓝奏云文件密码
@@ -26,7 +30,6 @@ public class LanzouDownloader {
                 String params = "action=downprocess&sign=" + sign + "&p=" + password;
                 String nextURLData = HTTPUtils.doPost(nextURL,params,url);
                 JsonObject jsonObject = JsonParser.parseString(nextURLData).getAsJsonObject();
-                System.out.println(nextURLData);
                 if (jsonObject.get("zt").getAsInt() == 1)
                     return jsonObject.get("dom").getAsString() + "/file/" + jsonObject.get("url").getAsString();
                 throw new LanzouException(jsonObject.get("inf").getAsString());
@@ -35,5 +38,23 @@ public class LanzouDownloader {
             e.printStackTrace();
         }
         return "";
+    }
+
+    /**
+     * 根据输入的蓝奏云文件链接和密码生成下载链接的映射表。
+     * 对输入的映射表中的每个URL，根据对应的密码生成下载链接，并将结果存储在新的映射表中返回。
+     *
+     * @param map 包含蓝奏云文件链接和密码的映射表
+     * @return 包含蓝奏云文件链接和对应下载链接的映射表
+     */
+    public static Map<String, String> getDownloadURL(Map<String, String> map) {
+        Map<String, String> downloadMap = new HashMap<>();
+
+        map.forEach((url, password) -> {
+            String downloadURL = getDownloadURL(url, password);
+            downloadMap.put(url, downloadURL);
+        });
+
+        return downloadMap;
     }
 }
