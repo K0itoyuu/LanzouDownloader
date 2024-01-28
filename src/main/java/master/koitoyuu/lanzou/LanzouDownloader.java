@@ -20,24 +20,20 @@ public class LanzouDownloader {
      * @param password 蓝奏云文件密码
      * @return 蓝奏云下载直链
      */
-    public static String getDownloadURL(String url,String password) {
-        try {
-            String urlData = HTTPUtils.doGet(url);
-            if (!urlData.isEmpty()) {
-                String downloadScript = StringUtils.getSubString(StringUtils.replaceBlank(urlData), "functiondown_p(){", "});}");
-                String sign = StringUtils.getSubString(downloadScript, "skdklds='", "';");
-                String nextURL = "https://" + StringUtils.getSubString(url, "https://", "/") + StringUtils.getSubString(downloadScript, "url:'", "',");
-                String params = "action=downprocess&sign=" + sign + "&p=" + password;
-                String nextURLData = HTTPUtils.doPost(nextURL,params,url);
-                JsonObject jsonObject = JsonParser.parseString(nextURLData).getAsJsonObject();
-                if (jsonObject.get("zt").getAsInt() == 1)
-                    return jsonObject.get("dom").getAsString() + "/file/" + jsonObject.get("url").getAsString();
-                throw new LanzouException(jsonObject.get("inf").getAsString());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+    public static String getDownloadURL(String url,String password) throws Exception {
+        String urlData = HTTPUtils.doGet(url);
+        if (!urlData.isEmpty()) {
+            String downloadScript = StringUtils.getSubString(StringUtils.replaceBlank(urlData), "functiondown_p(){", "});}");
+            String sign = StringUtils.getSubString(downloadScript, "skdklds='", "';");
+            String nextURL = "https://" + StringUtils.getSubString(url, "https://", "/") + StringUtils.getSubString(downloadScript, "url:'", "',");
+            String params = "action=downprocess&sign=" + sign + "&p=" + password;
+            String nextURLData = HTTPUtils.doPost(nextURL,params,url);
+            JsonObject jsonObject = JsonParser.parseString(nextURLData).getAsJsonObject();
+            if (jsonObject.get("zt").getAsInt() == 1)
+                return jsonObject.get("dom").getAsString() + "/file/" + jsonObject.get("url").getAsString();
+            throw new LanzouException(jsonObject.get("inf").getAsString());
         }
-        return "";
+        throw new NullPointerException();
     }
 
     /**
@@ -51,8 +47,12 @@ public class LanzouDownloader {
         Map<String, String> downloadMap = new HashMap<>();
 
         map.forEach((url, password) -> {
-            String downloadURL = getDownloadURL(url, password);
-            downloadMap.put(url, downloadURL);
+            try {
+                String downloadURL = getDownloadURL(url, password);
+                downloadMap.put(url, downloadURL);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
 
         return downloadMap;
