@@ -1,5 +1,6 @@
 package master.koitoyuu.lanzou;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import master.koitoyuu.lanzou.utils.HTTPUtils;
@@ -8,6 +9,7 @@ import master.koitoyuu.lanzou.utils.StringUtils;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -61,13 +63,13 @@ public class LanzouDownloader {
      * @throws NullPointerException 网路异常
      */
     public static Map<String,String> getFileInfo(String url, String password) throws LanzouException, IOException, NullPointerException {
-        String urlData = HTTPUtils.doGet(url);
+        String urlData = HTTPUtils.doGet(url,"codelen=1; pc_ad1=1");
         if (!urlData.isEmpty()) {
             String downloadScript = StringUtils.getSubString(StringUtils.replaceBlank(urlData), "functiondown_p(){", "});}");
             String sign = StringUtils.getSubString(downloadScript, "skdklds='", "';");
             String nextURL = "https://" + StringUtils.getSubString(url, "https://", "/") + StringUtils.getSubString(downloadScript, "url:'", "',");
             String params = "action=downprocess&sign=" + sign + "&p=" + password;
-            String nextURLData = HTTPUtils.doPost(nextURL, params, url);
+            String nextURLData = HTTPUtils.doPost(nextURL, params, url,"codelen=1; pc_ad1=1");
             JsonObject jsonObject = JsonParser.parseString(nextURLData).getAsJsonObject();
             if (jsonObject.get("zt").getAsInt() == 1) {
                 Map<String,String> map = new HashMap<>();
@@ -85,5 +87,50 @@ public class LanzouDownloader {
         }
 
         throw new NullPointerException();
+    }
+
+    /**
+     * 使用 cookie 从服务器获取账号下所有文件信息。
+     * @param cookie 蓝奏云 cookie。
+     * @return 包含文件信息的映射表，其中文件名作为键，文件详细信息作为值。
+     */
+    public static Map<String,Map<String,String>> getFiles(String cookie) {
+        String uid = StringUtils.getSubString(cookie,"ylogin=",";");
+        String urlData = HTTPUtils.doPost("https://pc.woozooo.com/doupload.php?uid=" + uid,"task=5&folder_id=-1&pg=1&vei=UlZWVA1fBAhQBANTDFY%3D","https://pc.woozooo.com/doupload.php?uid=" + uid,cookie);
+        if (!urlData.isEmpty()) {
+            JsonObject jsonObject = JsonParser.parseString(urlData).getAsJsonObject();
+            int zt = jsonObject.get("zt").getAsInt();
+            if (zt == 1) {
+                Map<String,Map<String,String>> files = new HashMap<>();
+                Iterator<JsonElement> iterator = jsonObject.get("text").getAsJsonArray().iterator();
+                while (iterator.hasNext()) {
+                    JsonObject fileObject = iterator.next().getAsJsonObject();
+                    Map<String,String> cachedMap = new HashMap<>();
+                    cachedMap.put("id",fileObject.get("id").getAsString());
+                    cachedMap.put("type",fileObject.get("icon").getAsString());
+                    cachedMap.put("name",fileObject.get("name_all").getAsString());
+                    cachedMap.put("size",fileObject.get("size").getAsString().replace(" ",""));
+                    cachedMap.put("downs",fileObject.get("downs").getAsString());
+                    boolean isLock = fileObject.get("onof").getAsString().equals("1");
+                    cachedMap.put("is_lock", String.valueOf(isLock ? 1 : 0));
+                    String fileData = HTTPUtils.doPost("https://pc.woozooo.com/doupload.php", "task=22&file_id=" + cachedMap.get("ID"), "https://pc.woozooo.com/mydisk.php?item=files&action=index&u=" + uid, cookie);
+                    if (!fileData.isEmpty()) {
+                        if (JsonParser.parseString(fileData).getAsJsonObject().get("zt").getAsInt() == 1) {
+                            JsonObject fileInfoObject = JsonParser.parseString(fileData).getAsJsonObject().get("info").getAsJsonObject();
+                            String fileURL = fileInfoObject.get("is_newd").getAsString() + "/" + fileInfoObject.get("f_id").getAsString();
+                            String password = fileInfoObject.get("pwd").getAsString();
+                            cachedMap.put("file_url", fileURL);
+                            //没上锁的文件蓝奏云也会随机生成密码
+                            cachedMap.put("password", password);
+                        }
+                    }
+                    cachedMap.put("time",fileObject.get("time").getAsString());
+                    files.put(cachedMap.get("name"),cachedMap);
+                }
+                return files;
+            }
+            throw new LanzouException(jsonObject.get("info").getAsString());
+        }
+        return new HashMap<>();
     }
 }

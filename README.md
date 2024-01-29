@@ -6,7 +6,19 @@ LanzouDownloader 是一个用于解析蓝奏云直链的 Java 工具，可以方
 
 ### 使用示例
 
-```java
-public static void main(String[] args) {
-    LanzouDownloader.getDownloadURL(URL, PASSWORD);
-}
+#### 不作为依赖
+例子: `java -jar LanzouDownloader.jar URL Password`
+
+
+#### 作为依赖
+获取文件下载链接例子:
+~~~java
+LanzouDownloader.getDownloadURL(URL, Password);
+~~~
+
+获取蓝奏云账号下所有文件信息例子:
+
+###### Cookie需自行获取
+~~~java
+LanzouDownloader.getFiles(Cookie);
+~~~

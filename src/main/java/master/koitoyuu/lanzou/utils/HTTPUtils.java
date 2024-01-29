@@ -11,13 +11,13 @@ import java.nio.charset.StandardCharsets;
 public class HTTPUtils {
     private static final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0";
 
-    public static String doGet(String url) throws IOException {
+    public static String doGet(String url,String cookie) throws IOException {
         HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
 
         con.setRequestMethod("GET");
         con.setRequestProperty("Connection", "Keep-Alive");
         con.setRequestProperty("User-Agent", userAgent);
-        con.addRequestProperty("Cookie", "codelen=1; pc_ad1=1");
+        con.addRequestProperty("Cookie", cookie);
 
         BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
         String inputLine;
@@ -33,7 +33,7 @@ public class HTTPUtils {
         return response.toString();
     }
     
-    public static String doPost(String url,String params,String referer) {
+    public static String doPost(String url,String params,String referer,String cookie) {
         try {
             HttpURLConnection connection = (HttpURLConnection) (new URL(url)).openConnection();
             connection.setRequestMethod("POST");
@@ -41,7 +41,7 @@ public class HTTPUtils {
             connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             connection.setRequestProperty("Accept", "application/json, text/javascript, */*");
             connection.setRequestProperty("User-Agent",userAgent);
-            connection.addRequestProperty("Cookie", "codelen=1; pc_ad1=1");
+            connection.addRequestProperty("Cookie", cookie);
             connection.addRequestProperty("DNT","1");
             connection.addRequestProperty("sec-ch-ua","\"Not A(Brand\";v=\"99\", \"Microsoft Edge\";v=\"121\", \"Chromium\";v=\"121\"");
             connection.setRequestProperty("Referer",referer);

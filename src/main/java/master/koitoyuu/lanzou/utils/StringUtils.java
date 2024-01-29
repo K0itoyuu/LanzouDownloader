@@ -4,7 +4,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class StringUtils {
-
     public static String getSubString(String text, String left, String right) {
         if (left == null || left.isEmpty()) {
             return "";
