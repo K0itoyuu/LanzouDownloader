@@ -25,8 +25,8 @@ public class LanzouDownloader {
      * @throws Exception 网络请求或解析异常
      */
     public static String getDownloadURL(String url, String password) throws Exception {
-        JsonObject fileInfo = getFileInfo(url, password);
-        return fileInfo.get("DownloadURL").getAsString();
+        Map<String,String> fileInfo = getFileInfo(url, password);
+        return fileInfo.get("DownloadURL");
     }
 
     /**
@@ -60,7 +60,7 @@ public class LanzouDownloader {
      * @throws IOException 网络异常
      * @throws NullPointerException 网路异常
      */
-    public static JsonObject getFileInfo(String url, String password) throws LanzouException, IOException, NullPointerException {
+    public static Map<String,String> getFileInfo(String url, String password) throws LanzouException, IOException, NullPointerException {
         String urlData = HTTPUtils.doGet(url);
         if (!urlData.isEmpty()) {
             String downloadScript = StringUtils.getSubString(StringUtils.replaceBlank(urlData), "functiondown_p(){", "});}");
@@ -70,16 +70,16 @@ public class LanzouDownloader {
             String nextURLData = HTTPUtils.doPost(nextURL, params, url);
             JsonObject jsonObject = JsonParser.parseString(nextURLData).getAsJsonObject();
             if (jsonObject.get("zt").getAsInt() == 1) {
-                JsonObject object = new JsonObject();
+                Map<String,String> map = new HashMap<>();
                 String downloadURL = jsonObject.get("dom").getAsString() + "/file/" + jsonObject.get("url").getAsString();
                 String fileName = jsonObject.get("inf").getAsString();
                 String size = StringUtils.getSubString(urlData, "<meta name=\"description\" content=\"文件大小：", "|\" />").replace(" ", "");
                 String uploader = StringUtils.getSubString(urlData,"<span class=\"user-name\">","</span><span class=\"user-name-txt\">");
-                object.addProperty("DownloadURL", downloadURL);
-                object.addProperty("FileName", fileName);
-                object.addProperty("Size", size);
-                object.addProperty("Uploader",uploader);
-                return object;
+                map.put("DownloadURL", downloadURL);
+                map.put("FileName", fileName);
+                map.put("Size", size);
+                map.put("Uploader",uploader);
+                return map;
             }
             throw new LanzouException(jsonObject.get("inf").getAsString());
         }
