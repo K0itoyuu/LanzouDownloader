@@ -2,8 +2,8 @@ package master.koitoyuu.lanzou;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import master.koitoyuu.lanzou.utils.HTTPUtils;
+import master.koitoyuu.lanzou.utils.JsonUtils;
 import master.koitoyuu.lanzou.utils.LanzouException;
 import master.koitoyuu.lanzou.utils.StringUtils;
 
@@ -70,7 +70,7 @@ public class LanzouDownloader {
             String nextURL = "https://" + StringUtils.getSubString(url, "https://", "/") + StringUtils.getSubString(downloadScript, "url:'", "',");
             String params = "action=downprocess&sign=" + sign + "&p=" + password;
             String nextURLData = HTTPUtils.doPost(nextURL, params, url,"codelen=1; pc_ad1=1");
-            JsonObject jsonObject = JsonParser.parseString(nextURLData).getAsJsonObject();
+            JsonObject jsonObject = JsonUtils.parseString(nextURLData).getAsJsonObject();
             if (jsonObject.get("zt").getAsInt() == 1) {
                 Map<String,String> map = new HashMap<>();
                 String downloadURL = jsonObject.get("dom").getAsString() + "/file/" + jsonObject.get("url").getAsString();
@@ -98,7 +98,7 @@ public class LanzouDownloader {
         String uid = StringUtils.getSubString(cookie,"ylogin=",";");
         String urlData = HTTPUtils.doPost("https://pc.woozooo.com/doupload.php?uid=" + uid,"task=5&folder_id=-1&pg=1&vei=UlZWVA1fBAhQBANTDFY%3D","https://pc.woozooo.com/doupload.php?uid=" + uid,cookie);
         if (!urlData.isEmpty()) {
-            JsonObject jsonObject = JsonParser.parseString(urlData).getAsJsonObject();
+            JsonObject jsonObject = JsonUtils.parseString(urlData).getAsJsonObject();
             int zt = jsonObject.get("zt").getAsInt();
             if (zt == 1) {
                 Map<String,Map<String,String>> files = new HashMap<>();
@@ -113,14 +113,13 @@ public class LanzouDownloader {
                     cachedMap.put("downs",fileObject.get("downs").getAsString());
                     boolean isLock = fileObject.get("onof").getAsString().equals("1");
                     cachedMap.put("is_lock", String.valueOf(isLock ? 1 : 0));
-                    String fileData = HTTPUtils.doPost("https://pc.woozooo.com/doupload.php", "task=22&file_id=" + cachedMap.get("ID"), "https://pc.woozooo.com/mydisk.php?item=files&action=index&u=" + uid, cookie);
+                    String fileData = HTTPUtils.doPost("https://pc.woozooo.com/doupload.php", "task=22&file_id=" + cachedMap.get("id"), "https://pc.woozooo.com/mydisk.php?item=files&action=index&u=" + uid, cookie);
                     if (!fileData.isEmpty()) {
-                        if (JsonParser.parseString(fileData).getAsJsonObject().get("zt").getAsInt() == 1) {
-                            JsonObject fileInfoObject = JsonParser.parseString(fileData).getAsJsonObject().get("info").getAsJsonObject();
+                        if (JsonUtils.parseString(fileData).getAsJsonObject().get("zt").getAsInt() == 1) {
+                            JsonObject fileInfoObject = JsonUtils.parseString(fileData).getAsJsonObject().get("info").getAsJsonObject();
                             String fileURL = fileInfoObject.get("is_newd").getAsString() + "/" + fileInfoObject.get("f_id").getAsString();
                             String password = fileInfoObject.get("pwd").getAsString();
                             cachedMap.put("file_url", fileURL);
-                            //没上锁的文件蓝奏云也会随机生成密码
                             cachedMap.put("password", password);
                         }
                     }
